@@ -16,20 +16,13 @@ export enum BlockType {
   H1 = 'h1',
   H2 = 'h2',
   H3 = 'h3',
-  H4 = 'h4',
-  H5 = 'h5',
-  H6 = 'h6',
-  CHECKBOX = 'checkbox',
-  BULLET = 'bullet',
-  NUMBERED = 'numbered',
   QUOTE = 'quote',
   CALLOUT = 'callout',
   DIVIDER = 'divider',
   CODE = 'code',
-  MATH = 'math',
-  TASK = 'task',
-  TABLE = 'table',
-  FOOTNOTE = 'footnote'
+  CHECKBOX = 'checkbox',
+  BULLET = 'bullet',
+  NUMBERED = 'numbered'
 }
 
 export interface Block {
@@ -46,11 +39,9 @@ export interface Task {
   priority: Priority;
   status: TaskStatus;
   difficulty: number;
-  points: number; 
+  points: number; // Enforced 1-5
   dueDate: string;
   startTime?: string;
-  duration?: number;
-  tags: string[];
   category: string;
 }
 
@@ -59,10 +50,8 @@ export interface Habit {
   title: string;
   streak: number;
   lastCompleted: string | null; 
-  pointsPerDay: number; 
+  pointsPerDay: number; // Enforced 1-2
   frequency: 'Daily' | 'Weekly';
-  limitPerWeek?: number;
-  completionsThisWeek?: number;
 }
 
 export interface Reward {
@@ -78,7 +67,7 @@ export interface Note {
   title: string;
   icon: string;
   blocks: Block[];
-  parentId?: string | null; 
+  parentId: string | null; 
   createdAt: string;
 }
 
@@ -97,6 +86,12 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface ScheduleTemplate {
+  id: string;
+  name: string;
+  items: { title: string, startTime: string, category: string }[];
+}
+
 export interface AppState {
   tasks: Task[];
   habits: Habit[];
@@ -106,9 +101,11 @@ export interface AppState {
   pointHistory: PointTransaction[];
   customCategories: string[];
   chatHistory: ChatMessage[];
+  referralUsed: boolean;
+  templates: ScheduleTemplate[];
 }
 
 export interface AIScheduleItem {
   taskId: string;
-  startTime: string; // "HH:00"
+  startTime: string; 
 }

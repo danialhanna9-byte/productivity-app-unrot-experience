@@ -8,9 +8,7 @@ const HabitsView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newHabit, setNewHabit] = useState({
     title: '',
-    frequency: 'Daily' as 'Daily' | 'Weekly',
-    points: 1,
-    limitPerWeek: 3
+    points: 1
   });
 
   const handleCreateHabit = () => {
@@ -20,148 +18,96 @@ const HabitsView: React.FC = () => {
       title: newHabit.title,
       streak: 0,
       lastCompleted: null,
-      pointsPerDay: Math.min(newHabit.points, 2),
-      frequency: newHabit.frequency,
-      limitPerWeek: newHabit.frequency === 'Weekly' ? newHabit.limitPerWeek : undefined,
-      completionsThisWeek: 0
+      // Requirement: Cap at 2 points
+      pointsPerDay: Math.max(1, Math.min(newHabit.points, 2)),
+      frequency: 'Daily'
     };
     dispatch.addHabit(habit);
-    setNewHabit({ title: '', frequency: 'Daily', points: 1, limitPerWeek: 3 });
+    setNewHabit({ title: '', points: 1 });
     setIsModalOpen(false);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Habits</h1>
-          <p className="text-[#161617]/50 text-sm">Consistent action builds points and focus.</p>
+          <h1 className="text-3xl font-bold mb-2">Habit Tracker</h1>
+          <p className="text-[#161617]/50 text-sm">Consistent daily actions.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="h-11 sm:h-9 bg-[#161617] text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-black transition-all active:scale-95 shadow-sm"
+          className="h-10 bg-[#161617] text-white px-6 rounded-xl text-xs font-bold hover:bg-black transition-all shadow-md active:scale-95"
         >
-          + New Habit
+          + Create Habit
         </button>
       </header>
 
-      {state.habits.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed border-[#EDECE9] rounded-2xl bg-white/50">
-          <p className="text-[#161617]/40 text-sm font-medium">No habits yet. Define your morning routines or focus habits.</p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {state.habits.map(habit => {
-            const isCompletedToday = habit.lastCompleted === todayStr;
-            const isLimitReached = habit.frequency === 'Weekly' && habit.limitPerWeek && (habit.completionsThisWeek || 0) >= habit.limitPerWeek;
-            const disabled = isCompletedToday || isLimitReached;
+      <div className="grid gap-4">
+        {state.habits.map(habit => {
+          // Requirement: Anti-Spam (disabled if already completed today)
+          const isCompletedToday = habit.lastCompleted === today;
 
-            return (
-              <div key={habit.id} className="bg-white border border-[#EDECE9] p-5 md:p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#F7F6F3] border border-[#EDECE9] rounded-xl flex items-center justify-center text-xl shadow-inner">
-                    {habit.streak > 7 ? '🔥' : '🌱'}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{habit.title}</h3>
-                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-[#161617]/40 mt-1">
-                      <span className="text-[#2383E2]">{habit.streak} DAY STREAK</span>
-                      <span>•</span>
-                      <span>{habit.frequency}</span>
-                      {habit.frequency === 'Weekly' && (
-                         <>
-                           <span>•</span>
-                           <span>{habit.completionsThisWeek}/{habit.limitPerWeek} THIS WEEK</span>
-                         </>
-                      )}
-                      <span>•</span>
-                      <span className="text-green-600">+{habit.pointsPerDay} PTS</span>
-                    </div>
-                  </div>
+          return (
+            <div key={habit.id} className="bg-white border border-[#EDECE9] p-6 rounded-2xl flex items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 text-[#2383E2] rounded-2xl flex items-center justify-center text-xl font-bold border border-blue-100 shadow-inner">
+                  {habit.streak}
                 </div>
-
-                <button 
-                  onClick={() => dispatch.completeHabit(habit.id)}
-                  disabled={disabled}
-                  className={`h-12 sm:h-10 px-6 rounded-xl font-bold text-xs transition-all min-w-[140px] shadow-sm flex items-center justify-center ${
-                    disabled 
-                    ? 'bg-green-50 text-green-500 border border-green-200 opacity-80 cursor-default' 
-                    : 'bg-[#161617] text-white hover:bg-black active:scale-95'
-                  }`}
-                >
-                  {isCompletedToday ? '✓ Completed Today' : isLimitReached ? 'Limit Reached' : 'Complete'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Habit Creation Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold">Create Custom Habit</h2>
-              
-              <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-bold text-[#161617]/40 uppercase tracking-widest block mb-1">Habit Name</label>
-                  <input 
-                    autoFocus
-                    value={newHabit.title}
-                    onChange={e => setNewHabit({...newHabit, title: e.target.value})}
-                    placeholder="E.g. Meditation"
-                    className="w-full bg-[#F7F6F3] border border-[#EDECE9] p-3 rounded-xl outline-none focus:border-[#2383E2] text-sm"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-[#161617]/40 uppercase tracking-widest block mb-1">Frequency</label>
-                    <select 
-                      value={newHabit.frequency}
-                      onChange={e => setNewHabit({...newHabit, frequency: e.target.value as any})}
-                      className="w-full bg-[#F7F6F3] border border-[#EDECE9] p-3 rounded-xl text-sm outline-none"
-                    >
-                      <option value="Daily">Daily</option>
-                      <option value="Weekly">Weekly</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-[#161617]/40 uppercase tracking-widest block mb-1">Points (1-2)</label>
-                    <input 
-                      type="number" min="1" max="2"
-                      value={newHabit.points}
-                      onChange={e => setNewHabit({...newHabit, points: parseInt(e.target.value)})}
-                      className="w-full bg-[#F7F6F3] border border-[#EDECE9] p-3 rounded-xl text-sm outline-none"
-                    />
+                  <h3 className="font-bold text-lg">{habit.title}</h3>
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-30 mt-1">
+                    <span className="text-[#2383E2]">Daily Streak</span>
+                    <span>•</span>
+                    <span>+{habit.pointsPerDay} Points</span>
                   </div>
                 </div>
-
-                {newHabit.frequency === 'Weekly' && (
-                  <div>
-                    <label className="text-[10px] font-bold text-[#161617]/40 uppercase tracking-widest block mb-1">Weekly Limit</label>
-                    <input 
-                      type="number" min="1" max="7"
-                      value={newHabit.limitPerWeek}
-                      onChange={e => setNewHabit({...newHabit, limitPerWeek: parseInt(e.target.value)})}
-                      className="w-full bg-[#F7F6F3] border border-[#EDECE9] p-3 rounded-xl text-sm outline-none"
-                    />
-                  </div>
-                )}
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 bg-[#F1F0EC] py-3 rounded-xl text-xs font-bold h-11">Cancel</button>
-                <button 
-                  onClick={handleCreateHabit}
-                  disabled={!newHabit.title.trim()}
-                  className="flex-1 bg-[#161617] text-white py-3 rounded-xl text-xs font-bold h-11"
-                >Create Habit</button>
+              <button 
+                onClick={() => dispatch.completeHabit(habit.id)}
+                disabled={isCompletedToday}
+                className={`h-12 px-8 rounded-2xl font-black text-xs transition-all shadow-md ${
+                  isCompletedToday 
+                  ? 'bg-green-50 text-green-500 border border-green-200 cursor-default shadow-none' 
+                  : 'bg-[#161617] text-white hover:scale-105 active:scale-95'
+                }`}
+              >
+                {isCompletedToday ? '✓ Completed' : 'Mark Done'}
+              </button>
+            </div>
+          );
+        })}
+        {state.habits.length === 0 && (
+          <div className="py-20 text-center opacity-30 italic text-sm">Start your first daily routine.</div>
+        )}
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 space-y-6 animate-in zoom-in-95 border border-[#EDECE9]">
+            <h2 className="text-2xl font-black">New Habit</h2>
+            <div className="space-y-5">
+              <div>
+                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block mb-2">Habit Name</label>
+                <input autoFocus value={newHabit.title} onChange={e => setNewHabit({...newHabit, title: e.target.value})} placeholder="E.g. Meditation" className="w-full bg-[#F7F6F3] border border-[#EDECE9] p-4 rounded-2xl outline-none font-bold" />
               </div>
+              <div>
+                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block mb-2">Points (1-2)</label>
+                <div className="flex gap-3">
+                  {[1, 2].map(p => (
+                    // Fix: Changed setNewReward to setNewHabit
+                    <button key={p} onClick={() => setNewHabit({...newHabit, points: p})} className={`flex-1 h-12 rounded-xl font-bold text-sm border-2 transition-all ${newHabit.points === p ? 'border-[#2383E2] bg-blue-50 text-[#2383E2]' : 'border-[#EDECE9] text-[#161617]/40 hover:bg-[#F7F6F3]'}`}>
+                      {p} Pt{p > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 h-12 bg-[#F1F0EC] rounded-2xl font-bold text-xs opacity-60">Cancel</button>
+              <button onClick={handleCreateHabit} disabled={!newHabit.title.trim()} className="flex-1 h-12 bg-[#2383E2] text-white rounded-2xl font-bold text-xs shadow-lg active:scale-95">Create</button>
             </div>
           </div>
         </div>

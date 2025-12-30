@@ -5,15 +5,17 @@ import { Note } from '../types';
 
 interface SidebarProps {
   activeView: string;
+  selectedNoteId: string | null;
   onViewChange: (view: any) => void;
   notes: Note[];
   onNoteSelect: (id: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, notes, onNoteSelect }) => {
-  const { dispatch } = useApp();
+const Sidebar: React.FC<SidebarProps> = ({ activeView, selectedNoteId, onViewChange, notes, onNoteSelect }) => {
+  const { state, dispatch } = useApp();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [showSettings, setShowSettings] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
+  const [refCode, setRefCode] = useState('');
 
   const handleAddPage = (parentId: string | null = null, title: string = 'New Page') => {
     const newNote: Note = {
@@ -40,10 +42,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, notes, onNo
     </button>
   );
 
-  const NoteItem = ({ note, level = 0 }: { note: Note, level?: number }) => {
+  // Fix: Explicitly type NoteItem as a functional component to handle the 'key' prop correctly in TSX
+  const NoteItem: React.FC<{ note: Note; level?: number }> = ({ note, level = 0 }) => {
     const children = notes.filter(n => n.parentId === note.id);
     const isExpanded = expanded[note.id];
-    const isSelected = activeView === 'notes' && note.id === notes.find(n => n.id === note.id)?.id;
+    const isSelected = activeView === 'notes' && selectedNoteId === note.id;
 
     return (
       <div className="flex flex-col">
@@ -80,28 +83,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, notes, onNo
     <aside className="w-64 bg-[#FFFFFF] border-r border-[#EDECE9] flex flex-col h-full select-none shadow-sm z-30">
       <div className="p-4 flex items-center gap-3 border-b border-[#F7F6F3]">
         <div className="w-6 h-6 bg-[#37352F] rounded flex items-center justify-center text-white text-[10px] font-bold">UW</div>
-        <span className="font-bold text-sm tracking-tight text-[#37352F]">Unrot Workspace</span>
+        <span className="font-black text-sm tracking-tight text-[#37352F]">Unrot v4</span>
       </div>
 
       <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
         <div className="space-y-0.5 mb-8">
-          <NavItem id="dashboard" label="Home" icon="📊" />
-          <NavItem id="schedule" label="Calendar" icon="🗓️" />
-          <NavItem id="tasks" label="Tasks" icon="✅" />
-          <NavItem id="habits" label="Habit Tracker" icon="🌱" />
-          <NavItem id="rewards" label="Reward Store" icon="💎" />
+          <NavItem id="dashboard" label="Dashboard" icon="📊" />
+          <NavItem id="schedule" label="Planner" icon="🗓️" />
+          <NavItem id="tasks" label="My Tasks" icon="✅" />
+          <NavItem id="habits" label="Habits" icon="🌱" />
+          <NavItem id="rewards" label="Store" icon="💎" />
         </div>
         
         <div className="mt-8">
           <div className="px-3 mb-2 flex items-center justify-between">
-            <span className="text-[10px] font-black text-[#37352F]/30 uppercase tracking-[0.15em]">Private Pages</span>
-            <button 
-              onClick={() => handleAddPage(null)} 
-              className="text-[#37352F]/40 hover:text-[#37352F] transition-colors p-1"
-              title="Add a page"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
+            <span className="text-[10px] font-black text-[#37352F]/30 uppercase tracking-[0.15em]">Workspace Pages</span>
+            <button onClick={() => handleAddPage(null)} className="text-[#37352F]/40 hover:text-[#37352F] p-1">+</button>
           </div>
           <div className="space-y-0.5">
             {rootNotes.map(note => <NoteItem key={note.id} note={note} />)}
@@ -109,35 +106,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, notes, onNo
         </div>
       </nav>
 
-      <div className="p-4 border-t border-[#F7F6F3] bg-[#F7F6F3]/20">
-        <button 
-          onClick={() => setShowSettings(true)}
-          className="flex items-center gap-3 text-xs font-semibold text-[#37352F]/40 hover:text-[#37352F] w-full px-3 py-2.5 rounded-lg transition-colors"
-        >
-          <span className="text-sm">⚙️</span>
-          <span>Workspace Settings</span>
+      <div className="p-4 border-t border-[#F7F6F3] bg-[#F7F6F3]/20 space-y-2">
+        {!state.referralUsed && (
+          <button onClick={() => setShowReferral(true)} className="w-full bg-[#2383E2]/10 text-[#2383E2] py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-[#2383E2]/20">Use Referral (50 pts)</button>
+        )}
+        <button className="flex items-center gap-3 text-xs font-semibold text-[#37352F]/40 hover:text-[#37352F] w-full px-3 py-2 rounded-lg transition-colors">
+          <span>⚙️</span>
+          <span>Settings</span>
         </button>
       </div>
 
-      {showSettings && (
+      {showReferral && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white p-10 rounded-3xl max-w-sm w-full shadow-2xl space-y-6">
-            <h2 className="text-2xl font-black">Workspace Settings</h2>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-[#EDECE9]">
-                <span className="text-sm font-bold opacity-60">Sidebar Width</span>
-                <span className="text-xs font-bold">240px</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-[#EDECE9]">
-                <span className="text-sm font-bold opacity-60">Dark Mode</span>
-                <span className="text-xs font-bold text-[#2383E2]">System Default</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-[#EDECE9]">
-                <span className="text-sm font-bold opacity-60">Export Format</span>
-                <span className="text-xs font-bold">Markdown</span>
-              </div>
+          <div className="bg-white p-8 rounded-3xl max-w-sm w-full shadow-2xl space-y-6">
+            <h2 className="text-xl font-black">Referral Onboarding</h2>
+            <p className="text-sm opacity-50">Enter a code to start with 50 credits.</p>
+            <input value={refCode} onChange={e => setRefCode(e.target.value)} placeholder="UNROT-2024" className="w-full bg-[#F7F6F3] p-4 rounded-xl border border-[#EDECE9] font-bold outline-none" />
+            <div className="flex gap-3">
+              <button onClick={() => setShowReferral(false)} className="flex-1 h-12 bg-[#F1F0EC] rounded-xl font-bold">Cancel</button>
+              <button onClick={() => { dispatch.applyReferral(refCode); setShowReferral(false); }} className="flex-1 h-12 bg-[#2383E2] text-white rounded-xl font-bold shadow-lg">Claim</button>
             </div>
-            <button onClick={() => setShowSettings(false)} className="w-full h-12 bg-[#161617] text-white rounded-2xl font-bold text-sm">Close</button>
           </div>
         </div>
       )}
