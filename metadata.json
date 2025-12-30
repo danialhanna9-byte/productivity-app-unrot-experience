@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Unrot Productivity Suite",
+  "description": "A Notion-inspired task manager, note-taker, and habit tracker with a rewards system to reduce screen time and improve focus.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
